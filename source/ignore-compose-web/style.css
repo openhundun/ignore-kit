@@ -1,0 +1,354 @@
+:root {
+    color-scheme: light;
+    --page: #f4f4f2;
+    --panel: #ffffff;
+    --border: #d8d5d1;
+    --text: #1d1b19;
+    --muted: #6f6a64;
+    --accent: #2f5d8a;
+    --accent-strong: #24496d;
+    --danger: #a33a32;
+    --success: #2f6d4f;
+    --code: #faf9f7;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--page);
+    color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+}
+
+h1,
+h2,
+p {
+    margin: 0;
+}
+
+.page-header,
+.layout {
+    width: 100%;
+    max-width: 1440px;
+    margin: 0 auto;
+    padding-left: 24px;
+    padding-right: 24px;
+}
+
+.page-header {
+    padding-top: 32px;
+    padding-bottom: 20px;
+}
+
+.page-header h1 {
+    font-size: 24px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+}
+
+.page-intro {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 20px;
+    padding-bottom: 40px;
+}
+
+.panel {
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel);
+}
+
+.panel h2 {
+    font-size: 16px;
+    line-height: 1.3;
+}
+
+.preview-panel {
+    position: sticky;
+    top: 20px;
+}
+
+.field {
+    margin-top: 18px;
+}
+
+.field:first-of-type {
+    margin-top: 16px;
+}
+
+.field > label,
+.field-title {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.field-heading,
+.preview-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.field-heading .field-title {
+    margin-bottom: 0;
+}
+
+.url-row {
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
+}
+
+.url-row input {
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+input[type="text"],
+input[type="url"],
+textarea {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: inherit;
+    font: inherit;
+}
+
+input[type="text"]:focus,
+input[type="url"]:focus,
+textarea:focus {
+    outline: 2px solid rgb(47 93 138 / 30%);
+    outline-offset: 1px;
+    border-color: var(--accent);
+}
+
+textarea {
+    min-height: 220px;
+    resize: vertical;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+    line-height: 1.55;
+    tab-size: 4;
+}
+
+.hint {
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.rules {
+    display: flex;
+    flex-direction: column;
+}
+
+.rule-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.rule-field {
+    display: block;
+    min-width: 0;
+}
+
+.rule-field span {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--muted);
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.rule-field input {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+}
+
+.rule-row > button {
+    justify-self: start;
+}
+
+button {
+    padding: 8px 13px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel);
+    color: var(--text);
+    font: inherit;
+    font-size: 14px;
+    line-height: 1.2;
+    cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+    background: #f0eeeb;
+    border-color: #c2beb8;
+}
+
+button:focus-visible {
+    outline: 2px solid rgb(47 93 138 / 45%);
+    outline-offset: 2px;
+}
+
+button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+button.primary {
+    margin-top: 20px;
+    border-color: var(--accent);
+    background: var(--accent);
+    color: #ffffff;
+    font-weight: 600;
+}
+
+button.primary:hover:not(:disabled) {
+    border-color: var(--accent-strong);
+    background: var(--accent-strong);
+}
+
+.status {
+    min-height: 1.55em;
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.status-error {
+    color: var(--danger);
+}
+
+.status-ok {
+    color: var(--success);
+}
+
+.meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin: 12px 0 10px;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+#preview,
+.config-json {
+    display: block;
+    margin: 0;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--code);
+    color: var(--text);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    white-space: pre;
+    tab-size: 4;
+    overflow: auto;
+}
+
+#preview {
+    min-height: 320px;
+    max-height: 62vh;
+}
+
+#preview:focus-visible,
+.config-json:focus-visible {
+    outline: 2px solid rgb(47 93 138 / 35%);
+    outline-offset: 1px;
+}
+
+.config-details {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+}
+
+.config-details summary {
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.config-json {
+    max-height: 260px;
+    margin-top: 10px;
+}
+
+.config-details button {
+    margin-top: 10px;
+}
+
+.copy-helper {
+    position: fixed;
+    top: -1000px;
+    left: -1000px;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+@media (max-width: 900px) {
+    .layout {
+        grid-template-columns: minmax(0, 1fr);
+    }
+
+    .preview-panel {
+        position: static;
+    }
+
+    #preview {
+        max-height: none;
+    }
+}
+
+@media (max-width: 560px) {
+    .page-header,
+    .layout {
+        padding-left: 14px;
+        padding-right: 14px;
+    }
+
+    .page-header {
+        padding-top: 22px;
+    }
+
+    .panel {
+        padding: 16px;
+    }
+
+    .url-row {
+        flex-direction: column;
+    }
+
+    .rule-row {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

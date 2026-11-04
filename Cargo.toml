@@ -1,0 +1,29 @@
+[workspace]
+members  = [
+    "source/ignore-compose-cli",
+    "source/ignore-compose-common",
+    "source/ignore-compose-lib",
+    "source/ignore-compose-wasm",
+]
+resolver = "3"
+
+[workspace.package]
+edition      = "2024"
+license      = "MIT"
+repository   = "https://github.com/openhundun/ignore-kit"
+rust-version = "1.85"
+version      = "0.1.0"
+
+[workspace.dependencies]
+ignore-compose-common = { version = "0.1.0", path = "source/ignore-compose-common" }
+ignore-compose-lib    = { version = "0.1.0", path = "source/ignore-compose-lib" }
+schemars              = "1.2.3"
+serde                 = { version = "1.0.229", features = ["derive"] }
+serde_json            = "1.0.154"
+tempfile              = "3.27.0"
+ts-rs                 = "12.0.1"
+ureq                  = "2.12.1"
+
+[profile.release]
+lto   = true
+strip = true

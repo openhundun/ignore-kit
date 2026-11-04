@@ -1,0 +1,17 @@
+{
+  "name": "ignore-compose",
+  "version": "0.1.0",
+  "description": "Compose ignore files from upstream templates with per-line overrides",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    ".": "./index.js"
+  },
+  "files": [
+    "index.js",
+    "ignore_compose.wasm"
+  ],
+  "scripts": {
+    "build:wasm": "cargo build --release -p ignore-compose-wasm --target wasm32-unknown-unknown && cp ../../target/wasm32-unknown-unknown/release/ignore_compose_wasm.wasm ./ignore_compose.wasm"
+  }
+}

@@ -1,0 +1,17 @@
+[package]
+description            = "Native CLI for ignore-compose"
+edition.workspace      = true
+license.workspace      = true
+name                   = "ignore-compose-cli"
+repository.workspace   = true
+rust-version.workspace = true
+version.workspace      = true
+
+[[bin]]
+name = "ignore-compose"
+path = "src/main.rs"
+
+[dependencies]
+ignore-compose-lib.workspace = true
+tempfile.workspace           = true
+ureq.workspace               = true

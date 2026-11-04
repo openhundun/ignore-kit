@@ -1,0 +1,49 @@
+{
+  "$defs": {
+    "Entry": {
+      "additionalProperties": false,
+      "properties": {
+        "override": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/OverrideItem"
+          },
+          "type": "array"
+        },
+        "upstream": {
+          "type": "string"
+        }
+      },
+      "required": ["upstream"],
+      "type": "object"
+    },
+    "OverrideItem": {
+      "additionalProperties": false,
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "into": {
+          "type": "string"
+        }
+      },
+      "required": ["from", "into"],
+      "type": "object"
+    }
+  },
+  "$id": "https://raw.githubusercontent.com/openhundun/ignore-kit/main/deploy/ignore-compose.schema.json",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": {
+    "items": {
+      "$ref": "#/$defs/Entry"
+    },
+    "type": "array"
+  },
+  "properties": {
+    "$schema": {
+      "type": ["string", "null"]
+    }
+  },
+  "title": "Config",
+  "type": "object"
+}

@@ -1,0 +1,13 @@
+[package]
+description            = "Pure composition logic for ignore-compose"
+edition.workspace      = true
+license.workspace      = true
+name                   = "ignore-compose-lib"
+repository.workspace   = true
+rust-version.workspace = true
+version.workspace      = true
+
+[dependencies]
+ignore-compose-common.workspace = true
+serde.workspace                 = true
+serde_json.workspace            = true

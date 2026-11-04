@@ -1,0 +1,22 @@
+[package]
+description            = "Shared model types and contract generator for ignore-compose"
+edition.workspace      = true
+license.workspace      = true
+name                   = "ignore-compose-common"
+repository.workspace   = true
+rust-version.workspace = true
+version.workspace      = true
+
+[[bin]]
+name              = "ignore-compose-contract"
+path              = "src/bin/contract.rs"
+required-features = ["contract"]
+
+[features]
+contract = ["dep:schemars", "dep:serde_json", "dep:ts-rs"]
+
+[dependencies]
+schemars        = { workspace = true, optional = true }
+serde.workspace = true
+serde_json      = { workspace = true, optional = true }
+ts-rs           = { workspace = true, optional = true }
