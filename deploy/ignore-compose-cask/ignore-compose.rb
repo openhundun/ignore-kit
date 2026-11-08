@@ -10,7 +10,6 @@ cask "ignore-compose" do
 
   url "https://github.com/openhundun/ignore-kit/releases/download/v#{version}/ignore-compose-#{arch}-#{os}.tar.gz"
   name "ignore-compose"
-  desc "Compose ignore files from upstream templates with per-line overrides"
   homepage "https://github.com/openhundun/ignore-kit"
 
   binary "ignore-compose"

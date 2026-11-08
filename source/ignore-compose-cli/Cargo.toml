@@ -1,17 +1,15 @@
 [package]
-description            = "Native CLI for ignore-compose"
-edition.workspace      = true
-license.workspace      = true
-name                   = "ignore-compose-cli"
-repository.workspace   = true
-rust-version.workspace = true
-version.workspace      = true
+name    = "ignore-compose-cli"
+version = { workspace = true }
 
 [[bin]]
 name = "ignore-compose"
 path = "src/main.rs"
 
 [dependencies]
-ignore-compose-lib.workspace = true
-tempfile.workspace           = true
-ureq.workspace               = true
+ignore-compose-lib = { version = "0.1.0", path = "../ignore-compose-lib" }
+schemars           = { workspace = true }
+serde_json         = { workspace = true }
+tempfile           = { workspace = true }
+ts-rs              = { workspace = true }
+ureq               = { workspace = true }

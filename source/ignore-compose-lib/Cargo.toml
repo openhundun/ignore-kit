@@ -1,13 +1,12 @@
 [package]
-description            = "Pure composition logic for ignore-compose"
-edition.workspace      = true
-license.workspace      = true
-name                   = "ignore-compose-lib"
-repository.workspace   = true
-rust-version.workspace = true
-version.workspace      = true
+name              = "ignore-compose-lib"
+version.workspace = true
+
+[lib]
+crate-type = ["rlib", "cdylib"]
 
 [dependencies]
-ignore-compose-common.workspace = true
-serde.workspace                 = true
-serde_json.workspace            = true
+schemars   = { workspace = true }
+serde      = { workspace = true }
+serde_json = { workspace = true }
+ts-rs      = { workspace = true }

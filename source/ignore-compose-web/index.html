@@ -4,88 +4,26 @@
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <title>ignore-compose</title>
-        <link rel="stylesheet" href="./style.css" />
     </head>
-    <body>
-        <header class="page-header">
-            <h1>ignore-compose</h1>
-            <p class="page-intro">合并上游 ignore 模板并应用覆盖规则，所有处理都在浏览器本地完成。</p>
-        </header>
-
-        <main class="layout">
-            <section class="panel editor-panel" aria-labelledby="editor-title">
-                <h2 id="editor-title">编辑</h2>
-
-                <div class="field">
-                    <label for="template-url">模板 URL</label>
-                    <div class="url-row">
-                        <input
-                            id="template-url"
-                            name="template-url"
-                            type="url"
-                            list="template-list"
-                            placeholder="https://raw.githubusercontent.com/..."
-                            autocomplete="off"
-                            spellcheck="false"
-                        />
-                        <button id="load-template" type="button">加载模板</button>
-                    </div>
-                    <datalist id="template-list">
-                        <option value="https://raw.githubusercontent.com/github/gitignore/main/Python.gitignore">Python</option>
-                        <option value="https://raw.githubusercontent.com/github/gitignore/main/Node.gitignore">Node</option>
-                        <option value="https://raw.githubusercontent.com/github/gitignore/main/Rust.gitignore">Rust</option>
-                        <option value="https://raw.githubusercontent.com/github/gitignore/main/Go.gitignore">Go</option>
-                        <option value="https://raw.githubusercontent.com/github/gitignore/main/Java.gitignore">Java</option>
-                        <option value="https://raw.githubusercontent.com/github/gitignore/main/Global/macOS.gitignore">macOS</option>
-                    </datalist>
-                    <p class="hint">从 GitHub raw 地址直接加载。若浏览器或网络阻止请求，可把内容粘贴到下方。</p>
-                </div>
-
-                <div class="field">
-                    <label for="upstream-text">上游模板内容</label>
-                    <textarea
-                        id="upstream-text"
-                        name="upstream-text"
-                        rows="16"
-                        spellcheck="false"
-                        placeholder="# 在这里粘贴 .gitignore 内容"
-                    ></textarea>
-                </div>
-
-                <div class="field">
-                    <div class="field-heading">
-                        <span class="field-title">覆盖规则</span>
-                        <button id="add-rule" type="button">添加规则</button>
-                    </div>
-                    <div id="rules" class="rules"></div>
-                    <p class="hint">from 留空、into 有值时追加一行；from 和 into 都为空的行会被忽略。</p>
-                </div>
-
-                <button id="generate" class="primary" type="button" disabled>生成预览</button>
-                <p id="status" class="status" role="status" aria-live="polite"></p>
-            </section>
-
-            <section class="panel preview-panel" aria-labelledby="preview-title">
-                <div class="preview-heading">
-                    <h2 id="preview-title">预览</h2>
-                    <button id="copy-preview" type="button" disabled>复制结果</button>
-                </div>
-
-                <div class="meta" aria-live="polite">
-                    <span id="line-count">0 行</span>
-                    <span id="rule-count">0 条规则</span>
-                </div>
-
-                <pre id="preview" tabindex="0">尚未生成预览。</pre>
-
-                <details id="config-details" class="config-details">
-                    <summary>生成的 ignore-compose.json</summary>
-                    <pre id="config-json" class="config-json" tabindex="0"></pre>
-                    <button id="copy-config" type="button" disabled>复制配置</button>
-                </details>
-            </section>
-        </main>
-
-        <script type="module" src="./app.js"></script>
+    <body class="min-h-screen bg-slate-100 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
+        <div id="root"></div>
+        <script>
+            window.setTimeout(() => {
+                if (window.ignoreComposeBooted) return;
+                let status = document.getElementById("status");
+                if (!status) {
+                    status = document.createElement("p");
+                    status.id = "status";
+                    status.setAttribute("role", "status");
+                    status.setAttribute("aria-live", "polite");
+                    status.className =
+                        "mx-auto my-8 max-w-3xl rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200";
+                    document.body.appendChild(status);
+                }
+                status.textContent =
+                    "页面脚本未启动：缺少打包产物（assets/*.js）。请先运行 bash script/ignore-compose.sh web，再以 dist 目录为根通过 HTTP 服务打开本页。";
+            }, 4000);
+        </script>
+        <script type="module" src="/src/index.tsx"></script>
     </body>
 </html>

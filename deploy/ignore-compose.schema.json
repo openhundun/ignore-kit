@@ -11,7 +11,10 @@
           "type": "array"
         },
         "upstream": {
-          "type": "string"
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
         }
       },
       "required": ["upstream"],

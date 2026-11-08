@@ -24,7 +24,6 @@
 **/.pytest_cache/
 **/.ruff_cache/
 **/.tox/
-**/.venv/
 **/.vscode/
 **/.xmake/
 **/HELP.md
