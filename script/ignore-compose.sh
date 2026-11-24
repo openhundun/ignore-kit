@@ -229,6 +229,7 @@ function job__cask() {
     local macos_x86_64_sha="$(sha256 "${DIST}/${APP_NAME}-x86_64-apple-darwin.tar.gz")"
     local linux_arm64_sha="$(sha256 "${DIST}/${APP_NAME}-aarch64-unknown-linux-musl.tar.gz")"
     local linux_x86_64_sha="$(sha256 "${DIST}/${APP_NAME}-x86_64-unknown-linux-musl.tar.gz")"
+    mkdir -p "$(dirname "${CASK_FILE}")"
     cat > "${CASK_FILE}" << EOF
 cask "${APP_NAME}" do
   arch arm: "aarch64", intel: "x86_64"

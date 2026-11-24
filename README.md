@@ -6,11 +6,10 @@
 | `source/ignore-compose-cli/`            | 原生 CLI 包 `ignore-compose-cli`（二进制 `ignore-compose`）：`gen` 合成/写文件，`schema`/`dts` 输出契约；`--check` 检查漂移 |
 | `source/ignore-compose-lib/`            | 领域包 `ignore-compose-lib`：单文件 `src/lib.rs`（模型、`Composer`、wasm ABI），不做文件 I/O                            |
 | `source/ignore-compose-web/`            | SolidJS + TailwindCSS 编辑器：`src/`（TSX 组件与 wasm 宿主）、Vite 构建配置；依赖安装不生成锁文件                       |
-| `deploy/ignore-compose-cask/`           | Homebrew cask 产物 `ignore-compose.rb`                                                                                  |
 | `deploy/ignore-compose.schema.json`     | 配置文件 JSON Schema                                                                                                    |
 | `deploy/ignore-compose.d.ts`            | 配置类型 TypeScript 声明                                                                                                |
 | `script/ignore-compose.sh`              | `job__check`、`job__contract`、`job__web`、`job__package`、`job__cask`、`job__release`                                  |
-| `.github/workflows/ignore-compose.yaml` | main push：编译检查 + 四平台构建，覆盖 `latest` release 资产并提交 cask；release 仅在 main 运行 |
+| `.github/workflows/ignore-compose.yaml` | main push：编译检查 + 四平台构建，覆盖 `latest` release 资产并触发 homebrew-tap；release 仅在 main 运行 |
 
 `deploy/ignore-compose.schema.json` 与 `deploy/ignore-compose.d.ts` 由 `bash script/ignore-compose.sh job__contract` 调用 CLI 的 `schema` / `dts` 生成，不要手改。
 

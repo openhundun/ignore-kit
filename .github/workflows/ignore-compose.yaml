@@ -60,15 +60,15 @@ jobs:
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash script/ignore-compose.sh job__package step__release
-      - name: commit cask
+      - name: dispatch homebrew tap
+        env:
+          GH_TOKEN: ${{ secrets.TAP_TOKEN }}
         run: |
-          git add deploy/ignore-compose-cask/ignore-compose.rb
-          if git diff --cached --quiet; then
-            echo "cask unchanged"
-            exit 0
-          fi
-          git -c user.name=openhundun-admin -c user.email=openhundun-admin@outlook.com commit -m "chore: update ignore-compose cask [skip ci]"
-          git push origin HEAD:main
+          gh api repos/openhundun/homebrew-tap/dispatches \
+            --method POST \
+            --input - <<EOF
+          {"event_type":"ignore-kit-release"}
+          EOF
     timeout-minutes: 10
 name: ignore-compose
 on:
