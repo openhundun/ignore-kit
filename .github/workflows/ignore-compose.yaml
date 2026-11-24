@@ -62,6 +62,15 @@ jobs:
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash script/ignore-compose.sh job__package step__release
+      - env:
+          GH_TOKEN: ${{ secrets.TAP_TOKEN }}
+        name: dispatch tap
+        run: |
+          gh api repos/openhundun/homebrew-tap/dispatches \
+            --method POST \
+            --input - <<EOF
+          {"event_type":"ignore-kit-release"}
+          EOF
     timeout-minutes: 10
 name: ignore-compose
 on:
