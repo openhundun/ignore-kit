@@ -28,7 +28,7 @@ function sha256() {
 function job__check() {
     function step__compile() {
         cd "${GIT_REPOSITORY_DIR}"
-        cargo check --workspace --locked
+        cargo check --workspace
     }
 
     function step__fmt() {
@@ -43,7 +43,7 @@ function job__check() {
 
     function step__wasm() {
         cd "${GIT_REPOSITORY_DIR}"
-        cargo build --release --locked -p ignore-compose-lib --target wasm32-unknown-unknown
+        cargo build --release -p ignore-compose-lib --target wasm32-unknown-unknown
     }
 
     function step__web() {
@@ -127,7 +127,7 @@ function job__package() {
     function step__build() {
         local target="${1:-${ARG_TARGET:?target is required}}"
         cd "${GIT_REPOSITORY_DIR}"
-        env "CC_x86_64_unknown_linux_musl=musl-gcc" "CC_aarch64_unknown_linux_musl=musl-gcc" cargo build --release --locked -p ignore-compose-cli --target "${target}"
+        env "CC_x86_64_unknown_linux_musl=musl-gcc" "CC_aarch64_unknown_linux_musl=musl-gcc" cargo build --release -p ignore-compose-cli --target "${target}"
     }
 
     function step__archive() {
@@ -190,7 +190,7 @@ function job__package() {
         step__write_zig_wrapper "${cxx_wrapper}" "${zig_target}" "c++" "${filter_cortex}"
         step__write_zig_wrapper "${ar_wrapper}" "${zig_target}" "ar" "false"
         cd "${GIT_REPOSITORY_DIR}"
-        env "CC_${target_cc_env}=${cc_wrapper}" "CXX_${target_cc_env}=${cxx_wrapper}" "AR_${target_cc_env}=${ar_wrapper}" "CARGO_TARGET_${target_env}_LINKER=${cc_wrapper}" RUSTFLAGS="-C link-self-contained=no" cargo build --release --locked -p ignore-compose-cli --target "${target}"
+        env "CC_${target_cc_env}=${cc_wrapper}" "CXX_${target_cc_env}=${cxx_wrapper}" "AR_${target_cc_env}=${ar_wrapper}" "CARGO_TARGET_${target_env}_LINKER=${cc_wrapper}" RUSTFLAGS="-C link-self-contained=no" cargo build --release -p ignore-compose-cli --target "${target}"
         step__archive "${target}"
     }
 

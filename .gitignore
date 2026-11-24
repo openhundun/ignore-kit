@@ -2,7 +2,6 @@
 **/*.egg-info/
 **/*.iml
 **/*.lock
-!Cargo.lock
 **/*.log
 **/*.pyc
 **/*.pyo
