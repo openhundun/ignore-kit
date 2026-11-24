@@ -4,6 +4,7 @@ import { load } from "./index.js";
 /** index.js 返回的 wasm 宿主 API（compose/plan 均为同步调用，加载本身是异步的）。 */
 export interface ComposeApi {
     compose(config: ComposeConfig, sources: Record<string, string>): ComposeOutput[];
+    composePreview(config: ComposeConfig, sources: Record<string, string>): ComposeOutput[];
     plan(config: ComposeConfig): PlanResult;
 }
 

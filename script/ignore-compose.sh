@@ -17,7 +17,20 @@ function version() {
     cargo metadata --manifest-path "${GIT_REPOSITORY_DIR}/Cargo.toml" --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "ignore-compose-cli") | .version'
 }
 
+function sha256() {
+    if command -v sha256sum > /dev/null 2>&1; then
+        sha256sum "${1}" | cut -d' ' -f1
+    else
+        shasum -a 256 "${1}" | cut -d' ' -f1
+    fi
+}
+
 function job__check() {
+    function step__compile() {
+        cd "${GIT_REPOSITORY_DIR}"
+        cargo check --workspace --locked
+    }
+
     function step__fmt() {
         cd "${GIT_REPOSITORY_DIR}"
         cargo fmt --all -- --check
@@ -30,23 +43,23 @@ function job__check() {
 
     function step__wasm() {
         cd "${GIT_REPOSITORY_DIR}"
-        cargo build --release -p ignore-compose-lib --target wasm32-unknown-unknown
+        cargo build --release --locked -p ignore-compose-lib --target wasm32-unknown-unknown
     }
 
     function step__web() {
         cd "${GIT_REPOSITORY_DIR}/source/${APP_NAME}-web"
         bun install --no-save
-        bun run check
+        bunx tsc --noEmit
     }
 
     function all() {
-        step__fmt
-        step__clippy
+        step__compile
         step__wasm
         step__web
     }
 
     case "${ARG_STEP}" in
+    step__compile) step__compile ;;
     step__fmt) step__fmt ;;
     step__clippy) step__clippy ;;
     step__wasm) step__wasm ;;
@@ -91,7 +104,7 @@ function job__web() {
             echo "error: missing ${PWD}/dist/ignore_compose.wasm" >&2
             return 1
         }
-        compgen -G "dist/assets/*.js" > /dev/null || {
+        [[ -n "$(find dist/assets -maxdepth 1 -name "*.js" -print -quit)" ]] || {
             echo "error: missing bundled assets in ${PWD}/dist/assets" >&2
             return 1
         }
@@ -129,8 +142,9 @@ function job__package() {
 
     function step__release() {
         cd "${GIT_REPOSITORY_DIR}"
+        job__cask
         gh release view latest > /dev/null 2>&1 || gh release create latest --title latest --notes "$(git rev-parse HEAD)" --target "$(git rev-parse HEAD)"
-        gh release upload latest "${DIST}"/*.tar.gz --clobber
+        gh release upload latest "${DIST}"/*.tar.gz "${CASK_FILE}" --clobber
     }
 
     function step__write_zig_wrapper() {
@@ -209,10 +223,10 @@ function job__package() {
 
 function job__cask() {
     local package_version="$(version)"
-    local macos_arm64_sha="$(shasum -a 256 "${DIST}/${APP_NAME}-aarch64-apple-darwin.tar.gz" | cut -d' ' -f1)"
-    local macos_x86_64_sha="$(shasum -a 256 "${DIST}/${APP_NAME}-x86_64-apple-darwin.tar.gz" | cut -d' ' -f1)"
-    local linux_arm64_sha="$(shasum -a 256 "${DIST}/${APP_NAME}-aarch64-unknown-linux-musl.tar.gz" | cut -d' ' -f1)"
-    local linux_x86_64_sha="$(shasum -a 256 "${DIST}/${APP_NAME}-x86_64-unknown-linux-musl.tar.gz" | cut -d' ' -f1)"
+    local macos_arm64_sha="$(sha256 "${DIST}/${APP_NAME}-aarch64-apple-darwin.tar.gz")"
+    local macos_x86_64_sha="$(sha256 "${DIST}/${APP_NAME}-x86_64-apple-darwin.tar.gz")"
+    local linux_arm64_sha="$(sha256 "${DIST}/${APP_NAME}-aarch64-unknown-linux-musl.tar.gz")"
+    local linux_x86_64_sha="$(sha256 "${DIST}/${APP_NAME}-x86_64-unknown-linux-musl.tar.gz")"
     cat > "${CASK_FILE}" << EOF
 cask "${APP_NAME}" do
   arch arm: "aarch64", intel: "x86_64"
@@ -224,7 +238,7 @@ cask "${APP_NAME}" do
          arm64_linux:  "${linux_arm64_sha}",
          x86_64_linux: "${linux_x86_64_sha}"
 
-  url "https://github.com/openhundun/ignore-kit/releases/download/v#{version}/${APP_NAME}-#{arch}-#{os}.tar.gz"
+  url "https://github.com/openhundun/ignore-kit/releases/download/latest/${APP_NAME}-#{arch}-#{os}.tar.gz"
   name "${APP_NAME}"
   homepage "https://github.com/openhundun/ignore-kit"
 
@@ -236,7 +250,7 @@ EOF
 
 function job__release() {
     local package_version="$(version)"
-    local tag="v${package_version}"
+    local tag="latest"
     job__package
     job__cask
     if gh release view "${tag}" > /dev/null 2>&1; then

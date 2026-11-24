@@ -53,10 +53,19 @@ impl Composer {
     }
 
     pub fn config(config: &crate::Config, sources: &std::collections::BTreeMap<String, String>) -> Result<Vec<Output>, String> {
+        Self::config_mode(config, sources, true)
+    }
+
+    /// 预览用：缺失 upstream 与未命中的 from 规则跳过，先渲染已加载部分。
+    pub fn config_partial(config: &crate::Config, sources: &std::collections::BTreeMap<String, String>) -> Result<Vec<Output>, String> {
+        Self::config_mode(config, sources, false)
+    }
+
+    fn config_mode(config: &crate::Config, sources: &std::collections::BTreeMap<String, String>, strict: bool) -> Result<Vec<Output>, String> {
         config
             .outputs
             .iter()
-            .map(|(path, entries)| Self::compose_output(path, entries, sources).map(|content| Output { path: path.clone(), content }))
+            .map(|(path, entries)| Self::compose_output(path, entries, sources, strict).map(|content| Output { path: path.clone(), content }))
             .collect()
     }
 
@@ -119,41 +128,46 @@ impl Composer {
             .collect()
     }
 
-    fn apply_overrides(line_list: Vec<String>, override_list: &[crate::OverrideItem], context: &str) -> Result<(Vec<String>, Vec<String>), String> {
+    fn apply_overrides(line_list: Vec<String>, override_list: &[crate::OverrideItem], context: &str, strict: bool) -> Result<(Vec<String>, Vec<String>), String> {
         let mut current = line_list;
         let mut appended = Vec::new();
         override_list.iter().enumerate().try_for_each(|(index, rule)| {
             let has_from = !rule.from.is_empty();
             let has_into = !rule.into.is_empty();
             crate::CheckUtil::ensure(has_from || has_into, || format!("{context}: override[{index}] has empty \"from\" and \"into\""))?;
-            crate::CheckUtil::ensure(!has_from || current.iter().any(|line| line == &rule.from), || {
-                format!("{context}: override[{index}] \"from\" did not match any upstream line: {:?}", rule.from)
-            })?;
-            if !has_from {
-                appended.push(rule.into.clone());
-            } else if has_into {
-                current.iter_mut().filter(|line| line.as_str() == rule.from).for_each(|line| *line = rule.into.clone());
+            if has_from {
+                let matched = current.iter().any(|line| line == &rule.from);
+                crate::CheckUtil::ensure(matched || !strict, || format!("{context}: override[{index}] \"from\" did not match any upstream line: {:?}", rule.from))?;
+                if matched {
+                    if has_into {
+                        current.iter_mut().filter(|line| line.as_str() == rule.from).for_each(|line| *line = rule.into.clone());
+                    } else {
+                        current.retain(|line| line != &rule.from);
+                    }
+                }
             } else {
-                current.retain(|line| line != &rule.from);
+                appended.push(rule.into.clone());
             }
             Ok::<(), String>(())
         })?;
         Ok((current, appended))
     }
 
-    fn compose_output(path: &str, entries: &[crate::Entry], sources: &std::collections::BTreeMap<String, String>) -> Result<String, String> {
+    fn compose_output(path: &str, entries: &[crate::Entry], sources: &std::collections::BTreeMap<String, String>, strict: bool) -> Result<String, String> {
         let mut positive_set = std::collections::BTreeSet::new();
         let mut negative_set = std::collections::BTreeSet::new();
         let mut custom_list = Vec::new();
         entries.iter().enumerate().try_for_each(|(index, entry)| {
             let mut line_list = Vec::new();
-            entry.upstream.iter().try_for_each(|key| {
-                let text = sources.get(key).ok_or_else(|| format!("{path}: upstream not provided: {key}"))?;
-                line_list.extend(Self::split_pattern_lines(text));
-                Ok::<(), String>(())
+            entry.upstream.iter().try_for_each(|key| match sources.get(key) {
+                Some(text) => {
+                    line_list.extend(Self::split_pattern_lines(text));
+                    Ok(())
+                }
+                None => crate::CheckUtil::ensure(!strict, || format!("{path}: upstream not provided: {key}")),
             })?;
             let context = format!("{path}: entry[{index}] {}", entry.upstream.join(", "));
-            let (line_list, appended_list) = Self::apply_overrides(line_list, &entry.override_list, &context)?;
+            let (line_list, appended_list) = Self::apply_overrides(line_list, &entry.override_list, &context, strict)?;
             custom_list.extend(appended_list);
             line_list.into_iter().for_each(|line| {
                 if line.starts_with('!') {
@@ -166,7 +180,7 @@ impl Composer {
         })?;
         let mut seen_set = std::collections::BTreeSet::new();
         custom_list.retain(|line| seen_set.insert(line.clone()));
-        crate::CheckUtil::ensure(!(positive_set.is_empty() && negative_set.is_empty() && custom_list.is_empty()), || {
+        crate::CheckUtil::ensure(!strict || !(positive_set.is_empty() && negative_set.is_empty() && custom_list.is_empty()), || {
             format!("{path}: output has no patterns")
         })?;
         let mut content = String::new();
@@ -206,16 +220,27 @@ impl Wasm {
         }
     }
 
-    fn compose_json(config_json: &str, sources_json: &str) -> String {
+    fn compose_json_with(config_json: &str, sources_json: &str, strict: bool) -> String {
         let result = (|| -> Result<Vec<crate::Output>, String> {
             let config = crate::Composer::parse(config_json)?;
             let source_map: std::collections::BTreeMap<String, String> = serde_json::from_str(sources_json).map_err(|error| format!("invalid sources: {error}"))?;
-            crate::Composer::config(&config, &source_map)
+            match strict {
+                true => crate::Composer::config(&config, &source_map),
+                false => crate::Composer::config_partial(&config, &source_map),
+            }
         })();
         match result {
             Ok(output_list) => serde_json::json!({ "outputs": output_list }).to_string(),
             Err(error) => serde_json::json!({ "error": error }).to_string(),
         }
+    }
+
+    fn compose_json(config_json: &str, sources_json: &str) -> String {
+        Self::compose_json_with(config_json, sources_json, true)
+    }
+
+    fn compose_preview_json(config_json: &str, sources_json: &str) -> String {
+        Self::compose_json_with(config_json, sources_json, false)
     }
 
     fn read_input(ptr: *const u8, len: usize) -> &'static str {
@@ -256,6 +281,11 @@ impl Wasm {
     #[unsafe(no_mangle)]
     pub extern "C" fn ignore_compose(config_ptr: *const u8, config_len: usize, sources_ptr: *const u8, sources_len: usize) -> *mut u8 {
         Self::response(Self::compose_json(Self::read_input(config_ptr, config_len), Self::read_input(sources_ptr, sources_len)))
+    }
+
+    #[unsafe(no_mangle)]
+    pub extern "C" fn ignore_compose_preview(config_ptr: *const u8, config_len: usize, sources_ptr: *const u8, sources_len: usize) -> *mut u8 {
+        Self::response(Self::compose_preview_json(Self::read_input(config_ptr, config_len), Self::read_input(sources_ptr, sources_len)))
     }
 
     #[unsafe(no_mangle)]

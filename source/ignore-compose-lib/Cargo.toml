@@ -1,6 +1,7 @@
 [package]
-name              = "ignore-compose-lib"
-version.workspace = true
+edition = { workspace = true }
+name    = "ignore-compose-lib"
+version = { workspace = true }
 
 [lib]
 crate-type = ["rlib", "cdylib"]

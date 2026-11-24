@@ -40,6 +40,9 @@ export async function load(source = new URL("./ignore_compose.wasm", import.meta
         compose(config, sources) {
             return call("ignore_compose", [config, sources]).outputs;
         },
+        composePreview(config, sources) {
+            return call("ignore_compose_preview", [config, sources]).outputs;
+        },
         plan(config) {
             return call("ignore_compose_plan", [config]);
         },

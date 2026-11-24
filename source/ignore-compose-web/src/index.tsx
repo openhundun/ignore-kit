@@ -7,6 +7,6 @@ import { App } from "./App";
 
 const root = document.getElementById("root");
 if (root === null) {
-    throw new Error("缺少 #root 挂载节点");
+    throw new Error("Missing #root mount node");
 }
 render(() => <App />, root);

@@ -1,27 +1,33 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta name="color-scheme" content="light" />
         <title>ignore-compose</title>
     </head>
-    <body class="min-h-screen bg-slate-100 text-slate-900 antialiased dark:bg-slate-950 dark:text-slate-100">
-        <div id="root"></div>
+    <body
+        class="m-0 h-dvh overflow-hidden p-[30px] font-sans text-[13px] leading-[1.45] tracking-[-0.012em] text-[#1d1d1f] antialiased max-[640px]:p-4"
+    >
+        <div
+            id="root"
+            class="flex h-full flex-col overflow-hidden rounded-xl border border-[#d2d2d7] bg-white shadow-[0_10px_40px_rgba(0,0,0,0.12)]"
+        ></div>
         <script>
             window.setTimeout(() => {
                 if (window.ignoreComposeBooted) return;
-                let status = document.getElementById("status");
+                let status = document.getElementById("boot-error");
                 if (!status) {
                     status = document.createElement("p");
-                    status.id = "status";
+                    status.id = "boot-error";
                     status.setAttribute("role", "status");
                     status.setAttribute("aria-live", "polite");
                     status.className =
-                        "mx-auto my-8 max-w-3xl rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200";
+                        "pointer-events-none fixed bottom-4 left-1/2 z-40 -translate-x-1/2 rounded-lg bg-[#b42318] px-3.5 py-[7px] text-[12px] text-white";
                     document.body.appendChild(status);
                 }
                 status.textContent =
-                    "页面脚本未启动：缺少打包产物（assets/*.js）。请先运行 bash script/ignore-compose.sh web，再以 dist 目录为根通过 HTTP 服务打开本页。";
+                    "Page script did not start: the bundle is missing. Run bash script/ignore-compose.sh web and serve the dist directory over HTTP.";
             }, 4000);
         </script>
         <script type="module" src="/src/index.tsx"></script>

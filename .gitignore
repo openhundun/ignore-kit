@@ -2,6 +2,7 @@
 **/*.egg-info/
 **/*.iml
 **/*.lock
+!Cargo.lock
 **/*.log
 **/*.pyc
 **/*.pyo
@@ -39,6 +40,7 @@
 **/gradle/
 **/gradlew
 **/gradlew.bat
+**/ignore_compose.wasm
 **/mvnw
 **/mvnw.cmd
 **/node_modules/

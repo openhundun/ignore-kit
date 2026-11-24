@@ -1,21 +1,22 @@
 {
-  "name": "ignore-compose-web",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "check": "biome check . && tsc --noEmit"
-  },
-  "dependencies": {
-    "solid-js": "^1.9.18"
-  },
-  "devDependencies": {
-    "@biomejs/biome": "^2.6.6",
-    "@tailwindcss/vite": "^4.3.5",
-    "tailwindcss": "^4.3.5",
-    "typescript": "^7.0.2",
-    "vite": "^8.3.6",
-    "vite-plugin-solid": "^2.11.15"
-  }
+    "name": "ignore-compose-web",
+    "version": "0.0.1",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build",
+        "check": "biome check . && tsc --noEmit"
+    },
+    "dependencies": {
+        "solid-js": "^1.9.18"
+    },
+    "devDependencies": {
+        "@biomejs/biome": "^2.6.6",
+        "@tailwindcss/vite": "^4.3.5",
+        "tailwindcss": "^4.3.5",
+        "typescript": "^7.0.2",
+        "vite": "^8.3.6",
+        "vite-plugin-solid": "^2.11.15"
+    }
 }

@@ -1,59 +1,83 @@
-/** 共享的 Tailwind 工具类组合；只做字符串复用，不含任何自定义 CSS。 */
+/** 11-23 原型的设计 token，全部以 Tailwind 工具类表达；不含自定义 CSS 与 style 属性。 */
 
-export const cardClass =
-    "rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900";
+const focusRing = "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0071e3]/35";
 
-export const hintClass = "mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400";
+const hiddenScrollbar = "[scrollbar-width:none] [&::-webkit-scrollbar]:hidden";
 
-export const sectionTitleClass = "text-sm font-semibold text-slate-700 dark:text-slate-200";
+export const appBarClass =
+    "flex h-[54px] flex-none items-center gap-3 border-b border-[#e8e8ed] bg-white px-4 max-[640px]:h-auto max-[640px]:min-h-12 max-[640px]:flex-wrap max-[640px]:px-3 max-[640px]:py-2";
 
-export type ButtonKind = "primary" | "default" | "danger";
+export const brandClass = "m-0 font-mono text-[14px] font-semibold tracking-[-0.02em]";
 
-const buttonBase =
-    "inline-flex shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 focus-visible:ring-offset-1 dark:focus-visible:ring-sky-400 dark:focus-visible:ring-offset-slate-900";
+export const appActionsClass = "ml-auto flex items-center gap-1.5";
 
-const buttonKindClassMap: Record<ButtonKind, string> = {
-    primary: "bg-sky-700 text-white hover:bg-sky-600 dark:bg-sky-600 dark:hover:bg-sky-500",
-    default:
-        "border border-slate-300 bg-white text-slate-700 hover:bg-slate-100 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700",
-    danger: "border border-red-300 bg-white text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-slate-900 dark:text-red-300 dark:hover:bg-red-950",
-};
+export const buttonClass = `inline-flex h-7 items-center justify-center gap-1 whitespace-nowrap rounded-md border border-[#d2d2d7] bg-white px-2.5 text-[12px] font-medium text-[#1d1d1f] transition-colors hover:border-[#86868b] hover:bg-[#f5f5f7] disabled:cursor-default disabled:opacity-35 ${focusRing}`;
 
-export function buttonClass(kind: ButtonKind = "default"): string {
-    return `${buttonBase} ${buttonKindClassMap[kind]}`;
+const iconButtonBase = `inline-grid size-[26px] shrink-0 cursor-pointer place-items-center rounded-md border border-transparent transition-colors hover:bg-[#f5f5f7] disabled:cursor-default disabled:opacity-35 ${focusRing}`;
+
+export const iconButtonClass = `${iconButtonBase} text-[#86868b] hover:text-[#1d1d1f]`;
+
+export const iconButtonBusyClass = `${iconButtonBase} animate-pulse text-[#0071e3]`;
+
+export const iconButtonDangerClass = `${iconButtonBase} text-[#dc2626] hover:text-[#dc2626]`;
+
+export const cardAddButtonClass = `ml-auto inline-grid size-[26px] shrink-0 cursor-pointer place-items-center rounded-md text-[#86868b] transition-colors hover:bg-[#f5f5f7] hover:text-[#1d1d1f] disabled:cursor-default disabled:opacity-35 ${focusRing}`;
+
+export const inputClass = `h-7 w-full min-w-0 rounded-md border border-[#d2d2d7] bg-white px-2 py-1 text-[12.5px] text-[#1d1d1f] transition-colors hover:border-[#86868b] focus-visible:border-[#0071e3] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#0071e3]/35`;
+
+export const monoInputClass = `${inputClass} font-mono text-[12px]`;
+
+export const tabsClass = "flex h-[30px] flex-none border-b border-[#e8e8ed]";
+
+const tabBase =
+    "flex h-full flex-none items-center border-b-2 px-3.5 text-[13px] font-medium transition-colors";
+
+export const tabClass = `${tabBase} cursor-pointer border-transparent text-[#6e6e73] hover:text-[#1d1d1f]`;
+
+export const tabActiveClass = `${tabBase} cursor-pointer border-[#0071e3] text-[#1d1d1f]`;
+
+export const panelBodyClass = "flex min-h-0 flex-1 flex-col p-3";
+
+export const formGridClass = "flex min-h-0 flex-1 flex-col gap-2.5";
+
+export const formCardClass =
+    "flex min-h-0 flex-1 basis-0 flex-col overflow-hidden rounded-xl border border-[#e8e8ed] bg-white";
+
+export const formCardHeadClass =
+    "flex h-[30px] flex-none items-center gap-2 border-b border-[#e8e8ed] bg-[#fbfbfd] pl-1 pr-2";
+
+export const formCardTitleClass = "pl-1 text-[12px] font-semibold tracking-[0.02em] text-[#424245]";
+
+export const formCardBodyClass = `flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto p-1 ${hiddenScrollbar}`;
+
+export const rowClass = "flex h-[30px] items-center gap-1 rounded-md px-1";
+
+export const ruleRowClass =
+    "grid h-[30px] grid-cols-[26px_minmax(0,1fr)_26px_minmax(0,1fr)_26px] items-center gap-1 rounded-md px-1";
+
+export const selectedRowClass = "bg-[#0071e3]/6 outline outline-1 outline-[#0071e3]/40";
+
+export const selectHandleSlotClass = `group inline-grid size-[26px] shrink-0 cursor-pointer place-items-center rounded-md hover:bg-[#f5f5f7] ${focusRing}`;
+
+export const selectDotClass =
+    "size-3.5 rounded-full border-[1.5px] border-[#d2d2d7] transition-colors group-hover:border-[#86868b]";
+
+export const selectDotActiveClass =
+    "size-3.5 rounded-full border-[1.5px] border-[#0071e3] bg-[#0071e3]";
+
+export const rowArrowClass =
+    "inline-flex size-[26px] shrink-0 items-center justify-center text-[#86868b]";
+
+export const mutedTextClass = "p-2 text-[12px] text-[#6e6e73]";
+
+export const outputCardClass =
+    "flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-[#e8e8ed] bg-[#fbfbfd]";
+
+export const outputBodyClass = `min-h-0 flex-1 overflow-y-auto ${hiddenScrollbar}`;
+
+export function focusLast(group: "source" | "transform" | "sink"): void {
+    requestAnimationFrame(() => {
+        const nodes = document.querySelectorAll<HTMLElement>(`[data-focus-group="${group}"]`);
+        nodes[nodes.length - 1]?.focus();
+    });
 }
-
-/** 小方形图标按钮（行内 ↑ ↓ ✕）。 */
-export const iconButtonClass =
-    "inline-flex size-7 shrink-0 items-center justify-center rounded-md border border-slate-300 bg-white text-slate-600 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700";
-
-export function inputClass(mono: boolean): string {
-    return `w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-600 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100 dark:placeholder:text-slate-500${mono ? " font-mono" : ""}`;
-}
-
-export type ChipState = "neutral" | "info" | "success" | "danger";
-
-const chipStateClassMap: Record<ChipState, string> = {
-    neutral: "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300",
-    info: "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-200",
-    success: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
-    danger: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
-};
-
-export function chipClass(state: ChipState): string {
-    return `inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-medium ${chipStateClassMap[state]}`;
-}
-
-export const tabActiveClass =
-    "rounded-md bg-white px-3 py-1.5 text-sm font-medium text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100";
-
-export const tabInactiveClass =
-    "rounded-md px-3 py-1.5 text-sm font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200";
-
-export const errorBoxClass =
-    "rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-800 dark:bg-red-950 dark:text-red-200";
-
-export const noticeBoxClass =
-    "rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200";
-
-export const monoTextClass = "font-mono text-xs leading-5 break-all";

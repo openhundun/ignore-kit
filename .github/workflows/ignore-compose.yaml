@@ -43,18 +43,16 @@ jobs:
       - uses: oven-sh/setup-bun@v2
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy
           targets: wasm32-unknown-unknown
-      - run: bash script/ignore-compose.sh job__check step__fmt
-      - run: bash script/ignore-compose.sh job__check step__clippy
-      - run: bash script/ignore-compose.sh job__check step__wasm
-      - run: bash script/ignore-compose.sh job__check step__web
+      - run: bash script/ignore-compose.sh job__check
     timeout-minutes: 20
   release:
+    if: github.ref == 'refs/heads/main'
     needs: [build]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/download-artifact@v4
         with:
           merge-multiple: true
@@ -62,10 +60,22 @@ jobs:
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash script/ignore-compose.sh job__package step__release
+      - name: commit cask
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add deploy/ignore-compose-cask/ignore-compose.rb
+          if git diff --cached --quiet; then
+            echo "cask unchanged"
+            exit 0
+          fi
+          git commit -m "chore: update ignore-compose cask [skip ci]"
+          git push origin HEAD:main
     timeout-minutes: 10
 name: ignore-compose
 on:
   push:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: write

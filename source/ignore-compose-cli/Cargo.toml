@@ -1,4 +1,5 @@
 [package]
+edition = { workspace = true }
 name    = "ignore-compose-cli"
 version = { workspace = true }
 
@@ -7,7 +8,7 @@ name = "ignore-compose"
 path = "src/main.rs"
 
 [dependencies]
-ignore-compose-lib = { version = "0.1.0", path = "../ignore-compose-lib" }
+ignore-compose-lib = { version = "0.0.1", path = "../ignore-compose-lib" }
 schemars           = { workspace = true }
 serde_json         = { workspace = true }
 tempfile           = { workspace = true }

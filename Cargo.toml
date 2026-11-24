@@ -7,15 +7,15 @@ edition      = "2024"
 license      = "MIT"
 repository   = "https://github.com/openhundun/ignore-kit"
 rust-version = "1.85"
-version      = "0.1.0"
+version      = "0.0.1"
 
 [workspace.dependencies]
-schemars   = "1.2.3"
+schemars   = { version = "1.2.3" }
 serde      = { version = "1.0.229", features = ["derive"] }
-serde_json = "1.0.154"
-tempfile   = "3.27.0"
-ts-rs      = "12.0.1"
-ureq       = "2.12.1"
+serde_json = { version = "1.0.154" }
+tempfile   = { version = "3.27.0" }
+ts-rs      = { version = "12.0.1" }
+ureq       = { version = "2.12.1" }
 
 [profile.release]
 lto   = true

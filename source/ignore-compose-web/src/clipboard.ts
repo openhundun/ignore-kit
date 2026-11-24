@@ -5,7 +5,7 @@ export async function copyText(text: string): Promise<void> {
             await navigator.clipboard.writeText(text);
             return;
         } catch (error) {
-            throw new Error(`写入剪贴板失败：${describeError(error)}`);
+            throw new Error(`Failed to write to clipboard: ${describeError(error)}`);
         }
     }
     const textarea = document.createElement("textarea");
@@ -15,10 +15,12 @@ export async function copyText(text: string): Promise<void> {
     textarea.select();
     try {
         if (!document.execCommand("copy")) {
-            throw new Error("execCommand 返回 false");
+            throw new Error("execCommand returned false");
         }
     } catch (error) {
-        throw new Error(`写入剪贴板失败：${describeError(error)}。请改用手动复制。`);
+        throw new Error(
+            `Failed to write to clipboard: ${describeError(error)}. Please copy manually.`,
+        );
     } finally {
         textarea.remove();
     }

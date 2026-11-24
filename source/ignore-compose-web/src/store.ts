@@ -5,28 +5,24 @@ import type { ComposeConfig, EditorState, EntryDraft, OverrideDraft, PathDraft }
 /** 与 wasm 侧一致的输出路径规则（见 source/ignore-compose-lib/src/lib.rs validate_output_path）。 */
 function validatePathDraft(path: string): void {
     if (path === "") {
-        throw new Error("输出路径不能为空。");
+        throw new Error("Output path must not be empty.");
     }
     if (path.includes("\\")) {
-        throw new Error(`输出路径 ${path} 必须使用正斜杠 “/”。`);
+        throw new Error(`Output path ${path} must use forward slashes "/".`);
     }
     const segments = path.split("/");
     if (path.startsWith("/") || segments.some(segment => segment === "..")) {
-        throw new Error(`输出路径 ${path} 必须是相对路径，且不能包含 “..” 段。`);
+        throw new Error(`Output path ${path} must be relative and must not contain "..".`);
     }
     if (segments.some(segment => segment === "." || segment === "")) {
-        throw new Error(`输出路径 ${path} 不能包含 “.” 或空段。`);
+        throw new Error(`Output path ${path} must not contain "." or empty segments.`);
     }
     const name = segments[segments.length - 1];
     if (!name.toLowerCase().includes("ignore")) {
-        throw new Error(`输出路径 ${path} 的文件名必须包含 “ignore”（例如 .gitignore）。`);
+        throw new Error(
+            `Output path ${path} file name must contain "ignore" (for example .gitignore).`,
+        );
     }
-}
-
-/** 统计文本行数（与文本框所见行一致，末尾换行不额外计数）。 */
-export function countLines(text: string): number {
-    if (text === "") return 0;
-    return text.split("\n").length - (text.endsWith("\n") ? 1 : 0);
 }
 
 function replaceAt<T>(list: readonly T[], index: number, value: T): T[] {
@@ -35,12 +31,6 @@ function replaceAt<T>(list: readonly T[], index: number, value: T): T[] {
 
 function removeAt<T>(list: readonly T[], index: number): T[] {
     return [...list.slice(0, index), ...list.slice(index + 1)];
-}
-
-function moveTo<T>(list: readonly T[], from: number, to: number): T[] {
-    const moved = list[from];
-    const next = removeAt(list, from);
-    return [...next.slice(0, to), moved, ...next.slice(to)];
 }
 
 /** 把编辑状态序列化为 ignore-compose.json 文本（4 空格缩进 + 末尾换行）。 */
@@ -61,44 +51,42 @@ export function parseConfig(text: string): PathDraft[] {
     try {
         raw = JSON.parse(text);
     } catch (error) {
-        throw new Error(`JSON 解析失败：${describeError(error)}`);
+        throw new Error(`JSON parse failed: ${describeError(error)}`);
     }
     if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
-        throw new Error("导入失败：配置根节点必须是 JSON 对象。");
+        throw new Error("Config root must be a JSON object.");
     }
     const pathDraftList: PathDraft[] = [];
     for (const [path, value] of Object.entries(raw)) {
         if (path === "$schema") continue;
         if (!Array.isArray(value)) {
-            throw new Error(`导入失败：“${path}” 的值必须是条目数组。`);
+            throw new Error(`"${path}" must be an array of entries.`);
         }
         const entryDraftList = value.map((item, entryIndex) => {
             if (item === null || typeof item !== "object" || Array.isArray(item)) {
-                throw new Error(`导入失败：“${path}” 的条目 ${entryIndex} 必须是对象。`);
+                throw new Error(`"${path}" entry ${entryIndex + 1} must be an object.`);
             }
             const record = item as Record<string, unknown>;
             const upstreamRaw = record.upstream ?? [];
             if (!Array.isArray(upstreamRaw) || upstreamRaw.some(key => typeof key !== "string")) {
                 throw new Error(
-                    `导入失败：“${path}” 的条目 ${entryIndex} 的 upstream 必须是字符串数组。`,
+                    `"${path}" entry ${entryIndex + 1} upstream must be a string array.`,
                 );
             }
             const overrideRaw = record.override ?? [];
             if (!Array.isArray(overrideRaw)) {
-                throw new Error(
-                    `导入失败：“${path}” 的条目 ${entryIndex} 的 override 必须是数组。`,
-                );
+                throw new Error(`"${path}" entry ${entryIndex + 1} override must be an array.`);
             }
             const ruleList = overrideRaw.map((ruleRaw, ruleIndex) => {
                 if (ruleRaw === null || typeof ruleRaw !== "object" || Array.isArray(ruleRaw)) {
                     throw new Error(
-                        `导入失败：“${path}” 的条目 ${entryIndex} 的规则 ${ruleIndex} 必须是对象。`,
+                        `"${path}" entry ${entryIndex + 1} rule ${ruleIndex + 1} must be an object.`,
                     );
                 }
                 const ruleRecord = ruleRaw as Record<string, unknown>;
                 if (typeof ruleRecord.from !== "string" || typeof ruleRecord.into !== "string") {
                     throw new Error(
-                        `导入失败：“${path}” 的条目 ${entryIndex} 的规则 ${ruleIndex} 必须包含字符串字段 from 与 into。`,
+                        `"${path}" entry ${entryIndex + 1} rule ${ruleIndex + 1} must have string from and into.`,
                     );
                 }
                 return { from: ruleRecord.from, into: ruleRecord.into } satisfies OverrideDraft;
@@ -108,22 +96,54 @@ export function parseConfig(text: string): PathDraft[] {
         pathDraftList.push({ path, entries: entryDraftList });
     }
     if (pathDraftList.length === 0) {
-        throw new Error("导入失败：配置里没有任何输出路径（只有 $schema）。");
+        throw new Error("No output paths found in config.");
     }
     for (const draft of pathDraftList) {
-        try {
-            validatePathDraft(draft.path);
-        } catch (error) {
-            throw new Error(`导入失败：${describeError(error)}`);
-        }
+        validatePathDraft(draft.path);
     }
     return pathDraftList;
+}
+
+/** 把 http(s) upstream 映射到站点内的 vendor 副本；归一化 refs/heads 与百分号编码。 */
+function vendoredUrl(key: string): string | null {
+    let url: URL;
+    try {
+        url = new URL(key);
+    } catch {
+        return null;
+    }
+    if (url.protocol !== "http:" && url.protocol !== "https:") return null;
+    let path: string;
+    try {
+        path = decodeURIComponent(url.pathname);
+    } catch {
+        path = url.pathname;
+    }
+    const normalized = path.replace(/^\/+/, "").replace(/\/refs\/heads\//, "/");
+    if (normalized === "") return null;
+    const encoded = normalized
+        .split("/")
+        .map(segment => encodeURIComponent(segment))
+        .join("/");
+    return new URL(`vendor/${url.host}/${encoded}`, document.baseURI).href;
+}
+
+/** 优先读取随站点发布的 vendor 副本；没有或读取失败时返回 null，由网络兜底。 */
+async function loadVendored(key: string): Promise<string | null> {
+    const url = vendoredUrl(key);
+    if (url === null) return null;
+    try {
+        const response = await fetch(url, { cache: "force-cache" });
+        return response.ok ? await response.text() : null;
+    } catch {
+        return null;
+    }
 }
 
 /** 创建编辑器 store 与全部动作；所有变更均以不可变方式更新。 */
 export function createEditorStore() {
     const [store, setStore] = createStore<EditorState>({
-        paths: [],
+        paths: [{ path: ".gitignore", entries: [{ upstream: [], override: [] }] }],
         sources: {},
         sourceStatus: {},
     });
@@ -150,12 +170,23 @@ export function createEditorStore() {
             const trimmed = path.trim();
             validatePathDraft(trimmed);
             if (store.paths.some(draft => draft.path === trimmed)) {
-                throw new Error(`输出路径已存在：${trimmed}`);
+                throw new Error(`Output path already exists: ${trimmed}`);
             }
             setStore("paths", pathList => [
                 ...pathList,
                 { path: trimmed, entries: [{ upstream: [], override: [] }] },
             ]);
+        },
+
+        renamePath(path: string, nextPath: string): void {
+            const trimmed = nextPath.trim();
+            validatePathDraft(trimmed);
+            if (trimmed !== path && store.paths.some(draft => draft.path === trimmed)) {
+                throw new Error(`Output path already exists: ${trimmed}`);
+            }
+            setStore("paths", pathList =>
+                pathList.map(draft => (draft.path === path ? { ...draft, path: trimmed } : draft)),
+            );
         },
 
         /** 导入：整体替换输出路径列表（不可变替换）。 */
@@ -214,14 +245,6 @@ export function createEditorStore() {
             }));
         },
 
-        moveUpstream(path: string, entryIndex: number, row: number, direction: -1 | 1): void {
-            updateEntry(path, entryIndex, entry => {
-                const target = row + direction;
-                if (target < 0 || target >= entry.upstream.length) return entry;
-                return { ...entry, upstream: moveTo(entry.upstream, row, target) };
-            });
-        },
-
         addRule(path: string, entryIndex: number): void {
             updateEntry(path, entryIndex, entry => ({
                 ...entry,
@@ -252,19 +275,25 @@ export function createEditorStore() {
             }));
         },
 
-        /** 为 upstream key 拉取内容；仅接受 http/https，失败状态留在 chip 上供粘贴兜底。 */
+        /** 为 upstream key 拉取内容；仅接受 http/https，失败时保留错误状态并抛出。 */
         async fetchSource(key: string): Promise<void> {
             if (key === "" || store.sourceStatus[key]?.state === "loading") return;
             if (!/^https?:\/\//i.test(key)) {
-                setStore("sourceStatus", key, {
-                    state: "failed",
-                    error: "仅支持 http/https 地址；本地路径请用“粘贴内容”。",
-                });
-                return;
+                const message = "Only http/https sources can be fetched.";
+                setStore("sourceStatus", key, { state: "failed", error: message });
+                throw new Error(message);
             }
             setStore("sourceStatus", key, { state: "loading" });
+            const vendored = await loadVendored(key);
+            if (vendored !== null) {
+                setStore("sources", key, vendored);
+                setStore("sourceStatus", key, { state: "loaded" });
+                return;
+            }
+            const controller = new AbortController();
+            const timer = window.setTimeout(() => controller.abort(), 20000);
             try {
-                const response = await fetch(key);
+                const response = await fetch(key, { signal: controller.signal });
                 if (!response.ok) {
                     throw new Error(
                         `HTTP ${response.status}${response.statusText === "" ? "" : ` ${response.statusText}`}`,
@@ -274,14 +303,12 @@ export function createEditorStore() {
                 setStore("sources", key, text);
                 setStore("sourceStatus", key, { state: "loaded" });
             } catch (error) {
-                setStore("sourceStatus", key, { state: "failed", error: describeError(error) });
+                const message = describeError(error);
+                setStore("sourceStatus", key, { state: "failed", error: message });
+                throw new Error(message);
+            } finally {
+                clearTimeout(timer);
             }
-        },
-
-        /** 粘贴兜底：直接把内容写入 sources 并标记已加载。 */
-        saveSource(key: string, text: string): void {
-            setStore("sources", key, text);
-            setStore("sourceStatus", key, { state: "loaded" });
         },
     };
 

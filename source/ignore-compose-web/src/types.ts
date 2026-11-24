@@ -42,10 +42,19 @@ export interface ComposeOutput {
     content: string;
 }
 
-/** wasm plan 的返回形状（见 source/ignore-compose-lib/src/exports.rs）。 */
+/** wasm plan 的返回形状（见 source/ignore-compose-lib/src/lib.rs）。 */
 export interface PlanResult {
     upstreams: string[];
     outputs: string[];
+}
+
+/** 预览计算结果；null 表示尚未就绪。 */
+export type PreviewResult = { ok: true; content: string } | { ok: false; error: string } | null;
+
+/** 预览高亮的选中来源；sink 始终以 active path 显示，不参与该选中态。 */
+export interface Selection {
+    type: "source" | "transform";
+    index: number;
 }
 
 export type StatusKind = "info" | "error";
