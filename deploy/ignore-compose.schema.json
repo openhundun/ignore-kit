@@ -17,7 +17,9 @@
           "type": "array"
         }
       },
-      "required": ["upstream"],
+      "required": [
+        "upstream"
+      ],
       "type": "object"
     },
     "OverrideItem": {
@@ -30,7 +32,10 @@
           "type": "string"
         }
       },
-      "required": ["from", "into"],
+      "required": [
+        "from",
+        "into"
+      ],
       "type": "object"
     }
   },
@@ -44,7 +49,10 @@
   },
   "properties": {
     "$schema": {
-      "type": ["string", "null"]
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "title": "Config",

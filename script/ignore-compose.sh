@@ -71,7 +71,9 @@ function job__check() {
 function job__contract() {
     function step__write() {
         cd "${GIT_REPOSITORY_DIR}"
-        cargo run --quiet -p ignore-compose-cli -- contract
+        mkdir -p deploy
+        cargo run --quiet -p ignore-compose-cli -- schema > deploy/ignore-compose.schema.json
+        cargo run --quiet -p ignore-compose-cli -- dts > deploy/ignore-compose.d.ts
     }
 
     function all() {

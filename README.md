@@ -3,7 +3,7 @@
 | 路径                                    | 说明                                                                                                                    |
 | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | `Cargo.toml`                            | Cargo workspace 清单（`resolver = "3"`，共享依赖与 release profile）                                                    |
-| `source/ignore-compose-cli/`            | 原生 CLI 包 `ignore-compose-cli`（二进制 `ignore-compose`）：fetch、guard、write；`contract` 子命令生成 deploy 契约文件 |
+| `source/ignore-compose-cli/`            | 原生 CLI 包 `ignore-compose-cli`（二进制 `ignore-compose`）：`gen` 合成/写文件，`schema`/`dts` 输出契约；`--check` 检查漂移 |
 | `source/ignore-compose-lib/`            | 领域包 `ignore-compose-lib`：单文件 `src/lib.rs`（模型、`Composer`、wasm ABI），不做文件 I/O                            |
 | `source/ignore-compose-web/`            | SolidJS + TailwindCSS 编辑器：`src/`（TSX 组件与 wasm 宿主）、Vite 构建配置；依赖安装不生成锁文件                       |
 | `deploy/ignore-compose-cask/`           | Homebrew cask 产物 `ignore-compose.rb`                                                                                  |
@@ -12,7 +12,24 @@
 | `script/ignore-compose.sh`              | `job__check`、`job__contract`、`job__web`、`job__package`、`job__cask`、`job__release`                                  |
 | `.github/workflows/ignore-compose.yaml` | main push：编译检查 + 四平台构建，覆盖 `latest` release 资产并提交 cask；release 仅在 main 运行 |
 
-`deploy/ignore-compose.schema.json` 与 `deploy/ignore-compose.d.ts` 由 `bash script/ignore-compose.sh job__contract` 从 Rust 类型生成，不要手改。
+`deploy/ignore-compose.schema.json` 与 `deploy/ignore-compose.d.ts` 由 `bash script/ignore-compose.sh job__contract` 调用 CLI 的 `schema` / `dts` 生成，不要手改。
+
+## CLI
+
+```sh
+ignore-compose -v
+ignore-compose gen -f ignore-compose.json          # 输出到 stdout
+ignore-compose gen -f ignore-compose.json -w       # 写入文件
+ignore-compose gen -f ignore-compose.json --check  # 检查漂移，不写
+ignore-compose schema                              # schema 输出到 stdout
+ignore-compose dts                                 # d.ts 输出到 stdout
+```
+
+- `gen` 默认只输出到 stdout；`-w` / `--write` 才落文件，`--check` 只比较，二者互斥。
+- `gen` 只有一个输出时直接打印内容；多个输出时每个文件前打印 `==> <path>`。
+- `-f` / `--config` 不传时从当前目录向上找最近的 `ignore-compose.json`；输出路径相对配置文件目录。
+- `-w` 与 `--check` 会先跑 `.gitignore` guard；`gen` 纯输出不跑 guard。
+- `schema` / `dts` 不接受参数，只写 stdout；CI 的 `job__contract` 负责重定向到 `deploy/`。
 
 ## Web 面板
 

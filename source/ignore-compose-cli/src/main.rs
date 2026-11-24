@@ -12,11 +12,14 @@ fn main() {
 struct Options {
     config: Option<std::path::PathBuf>,
     check: bool,
+    write: bool,
     verbose: bool,
 }
 
 enum Invocation {
-    Run(Options),
+    Gen(Options),
+    Schema,
+    Dts,
     Done,
 }
 
@@ -26,7 +29,9 @@ impl Cli {
     fn run() -> Result<i32, String> {
         match Self::parse_args()? {
             Invocation::Done => Ok(0),
-            Invocation::Run(options) => Self::execute(options),
+            Invocation::Schema => Printer::text(&Contract::schema()?).map(|()| 0),
+            Invocation::Dts => Printer::text(&Contract::typescript()).map(|()| 0),
+            Invocation::Gen(options) => Self::execute(options),
         }
     }
 
@@ -47,36 +52,53 @@ impl Cli {
             })
             .collect::<Result<std::collections::BTreeMap<String, String>, String>>()?;
         let output_list = ignore_compose_lib::Composer::config(&config, &source_map)?;
-        output_list
-            .iter()
-            .filter(|output| Guard::is_gitignore(&output.path))
-            .try_for_each(|output| Guard::verify(&config_dir, output, options.verbose))?;
-        match options.check {
-            true => Ok(Checker::check(&config_dir, &output_list)),
-            false => output_list.iter().try_for_each(|output| Writer::write(&config_dir, output)).map(|()| 0),
+        if options.check || options.write {
+            output_list
+                .iter()
+                .filter(|output| Guard::is_gitignore(&output.path))
+                .try_for_each(|output| Guard::verify(&config_dir, output, options.verbose))?;
+        }
+        match (options.check, options.write) {
+            (true, _) => Ok(Checker::check(&config_dir, &output_list)),
+            (false, true) => output_list.iter().try_for_each(|output| Writer::write(&config_dir, output)).map(|()| 0),
+            (false, false) => Printer::outputs(&output_list).map(|()| 0),
         }
     }
 
     fn parse_args() -> Result<Invocation, String> {
         let args: Vec<String> = std::env::args().skip(1).collect();
-        let version = args.iter().any(|arg| arg == "-V" || arg == "--version");
-        let contract = args.first().is_some_and(|arg| arg == "contract");
-        match (version, contract) {
-            (true, _) => {
-                println!("ignore-compose {}", env!("CARGO_PKG_VERSION"));
-                Ok(Invocation::Done)
+        if args.iter().any(|arg| arg == "-v" || arg == "-V" || arg == "--version") {
+            println!("ignore-compose {}", env!("CARGO_PKG_VERSION"));
+            return Ok(Invocation::Done);
+        }
+        let Some(command) = args.first() else {
+            return Err("missing command (gen, schema, dts)".to_string());
+        };
+        match command.as_str() {
+            "gen" => Self::parse_options(&args[1..]).map(Invocation::Gen),
+            "schema" => {
+                if let Some(argument) = args.get(1) {
+                    return Err(format!("schema takes no arguments: {argument}"));
+                }
+                Ok(Invocation::Schema)
             }
-            (_, true) => Contract::write().map(|()| Invocation::Done),
-            _ => Self::parse_options(&args).map(Invocation::Run),
+            "dts" => {
+                if let Some(argument) = args.get(1) {
+                    return Err(format!("dts takes no arguments: {argument}"));
+                }
+                Ok(Invocation::Dts)
+            }
+            other => Err(format!("unknown command: {other}")),
         }
     }
 
     fn parse_options(args: &[String]) -> Result<Options, String> {
-        let mut options = Options { config: None, check: false, verbose: false };
+        let mut options = Options { config: None, check: false, write: false, verbose: false };
         let mut iterator = args.iter();
         while let Some(arg) = iterator.next() {
             match arg.as_str() {
                 "--check" => options.check = true,
+                "-w" | "--write" => options.write = true,
                 "--verbose" => options.verbose = true,
                 "-f" | "--config" => {
                     let value = iterator.next().ok_or("--config requires a path")?;
@@ -84,6 +106,9 @@ impl Cli {
                 }
                 other => Err(format!("unknown argument: {other}"))?,
             }
+        }
+        if options.check && options.write {
+            return Err("--check and --write are mutually exclusive".to_string());
         }
         Ok(options)
     }
@@ -223,6 +248,35 @@ impl Writer {
     }
 }
 
+struct Printer;
+
+impl Printer {
+    fn text(text: &str) -> Result<(), String> {
+        use std::io::Write;
+        let mut stdout = std::io::stdout().lock();
+        stdout.write_all(text.as_bytes()).map_err(|error| format!("cannot write stdout: {error}"))?;
+        stdout.flush().map_err(|error| format!("cannot flush stdout: {error}"))
+    }
+
+    fn outputs(output_list: &[ignore_compose_lib::Output]) -> Result<(), String> {
+        use std::io::Write;
+        let stdout = std::io::stdout();
+        let mut writer = stdout.lock();
+        let multiple = output_list.len() > 1;
+        output_list.iter().try_for_each(|output| {
+            if multiple {
+                writeln!(writer, "==> {}", output.path).map_err(|error| format!("cannot write stdout: {error}"))?;
+            }
+            writer.write_all(output.content.as_bytes()).map_err(|error| format!("cannot write stdout: {error}"))?;
+            if !output.content.ends_with('\n') {
+                writeln!(writer).map_err(|error| format!("cannot write stdout: {error}"))?;
+            }
+            Ok::<(), String>(())
+        })?;
+        writer.flush().map_err(|error| format!("cannot flush stdout: {error}"))
+    }
+}
+
 struct Checker;
 
 impl Checker {
@@ -275,13 +329,7 @@ impl TextUtil {
 struct Contract;
 
 impl Contract {
-    fn write() -> Result<(), String> {
-        let root = std::env::current_dir().map_err(|error| format!("cannot resolve working directory: {error}"))?;
-        Self::schema(&root)?.write()?;
-        Self::typescript(&root).write()
-    }
-
-    fn schema(root: &std::path::Path) -> Result<Artifact, String> {
+    fn schema() -> Result<String, String> {
         let mut value = serde_json::to_value(schemars::schema_for!(ignore_compose_lib::Config)).map_err(|error| format!("cannot serialize schema: {error}"))?;
         let object = value.as_object_mut().ok_or_else(|| "schema is not an object".to_string())?;
         object.insert(
@@ -290,35 +338,16 @@ impl Contract {
         );
         let mut content = serde_json::to_string_pretty(&value).map_err(|error| format!("cannot format schema: {error}"))?;
         content.push('\n');
-        Ok(Artifact { path: root.join("deploy/ignore-compose.schema.json"), content })
+        Ok(content)
     }
 
-    fn typescript(root: &std::path::Path) -> Artifact {
+    fn typescript() -> String {
         let config = ts_rs::Config::default();
         let declaration_list = [
             format!("export {}", <ignore_compose_lib::OverrideItem as ts_rs::TS>::decl(&config)),
             format!("export {}", <ignore_compose_lib::Entry as ts_rs::TS>::decl(&config)),
             format!("export {}", <ignore_compose_lib::Config as ts_rs::TS>::decl(&config)),
         ];
-        Artifact {
-            path: root.join("deploy/ignore-compose.d.ts"),
-            content: format!("{}\n", declaration_list.join("\n\n")),
-        }
-    }
-}
-
-struct Artifact {
-    path: std::path::PathBuf,
-    content: String,
-}
-
-impl Artifact {
-    fn write(&self) -> Result<(), String> {
-        if let Some(parent) = self.path.parent() {
-            std::fs::create_dir_all(parent).map_err(|error| format!("cannot create {}: {error}", parent.display()))?;
-        }
-        std::fs::write(&self.path, &self.content).map_err(|error| format!("cannot write {}: {error}", self.path.display()))?;
-        println!("wrote {}", self.path.display());
-        Ok(())
+        format!("{}\n", declaration_list.join("\n\n"))
     }
 }
