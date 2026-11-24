@@ -62,14 +62,12 @@ jobs:
         run: bash script/ignore-compose.sh job__package step__release
       - name: commit cask
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add deploy/ignore-compose-cask/ignore-compose.rb
           if git diff --cached --quiet; then
             echo "cask unchanged"
             exit 0
           fi
-          git commit -m "chore: update ignore-compose cask [skip ci]"
+          git -c user.name=openhundun-admin -c user.email=openhundun-admin@outlook.com commit -m "chore: update ignore-compose cask [skip ci]"
           git push origin HEAD:main
     timeout-minutes: 10
 name: ignore-compose
