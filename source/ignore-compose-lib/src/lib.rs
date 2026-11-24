@@ -15,7 +15,7 @@ pub struct Entry {
 }
 
 #[derive(Debug, Clone, schemars::JsonSchema, serde::Deserialize, serde::Serialize, ts_rs::TS)]
-#[ts(type = "{ $schema?: string; [path: string]: Array<Entry> | string | undefined; }")]
+#[ts(type = "{ [path: string]: Array<Entry>; }")]
 pub struct Config {
     #[serde(rename = "$schema", default, skip_serializing_if = "Option::is_none")]
     pub schema: Option<String>,
