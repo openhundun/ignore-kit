@@ -7,22 +7,13 @@ readonly ARG_TARGET="${3:-}"
 readonly GIT_REPOSITORY_DIR="${GIT_REPOSITORY_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 readonly APP_NAME="ignore-compose"
 readonly DIST="${GIT_REPOSITORY_DIR}/source/${APP_NAME}-cli/dist"
-readonly CASK_FILE="${GIT_REPOSITORY_DIR}/deploy/${APP_NAME}-cask/${APP_NAME}.rb"
 
 function help() {
-    echo "USAGE: ${0} <job__check|job__contract|job__web|job__package|job__cask|job__release> [step__xxx] [target]"
+    echo "USAGE: ${0} <job__check|job__contract|job__web|job__package|job__release> [step__xxx] [target]"
 }
 
 function version() {
     cargo metadata --manifest-path "${GIT_REPOSITORY_DIR}/Cargo.toml" --no-deps --format-version 1 | jq -r '.packages[] | select(.name == "ignore-compose-cli") | .version'
-}
-
-function sha256() {
-    if command -v sha256sum > /dev/null 2>&1; then
-        sha256sum "${1}" | cut -d' ' -f1
-    else
-        shasum -a 256 "${1}" | cut -d' ' -f1
-    fi
 }
 
 function job__check() {
@@ -144,9 +135,8 @@ function job__package() {
 
     function step__release() {
         cd "${GIT_REPOSITORY_DIR}"
-        job__cask
         gh release view latest > /dev/null 2>&1 || gh release create latest --title latest --notes "$(git rev-parse HEAD)" --target "$(git rev-parse HEAD)"
-        gh release upload latest "${DIST}"/*.tar.gz "${CASK_FILE}" --clobber
+        gh release upload latest "${DIST}"/*.tar.gz --clobber
     }
 
     function step__write_zig_wrapper() {
@@ -223,43 +213,14 @@ function job__package() {
     esac
 }
 
-function job__cask() {
-    local package_version="$(version)"
-    local macos_arm64_sha="$(sha256 "${DIST}/${APP_NAME}-aarch64-apple-darwin.tar.gz")"
-    local macos_x86_64_sha="$(sha256 "${DIST}/${APP_NAME}-x86_64-apple-darwin.tar.gz")"
-    local linux_arm64_sha="$(sha256 "${DIST}/${APP_NAME}-aarch64-unknown-linux-musl.tar.gz")"
-    local linux_x86_64_sha="$(sha256 "${DIST}/${APP_NAME}-x86_64-unknown-linux-musl.tar.gz")"
-    mkdir -p "$(dirname "${CASK_FILE}")"
-    cat > "${CASK_FILE}" << EOF
-cask "${APP_NAME}" do
-  arch arm: "aarch64", intel: "x86_64"
-  os macos: "apple-darwin", linux: "unknown-linux-musl"
-
-  version "${package_version}"
-  sha256 arm:          "${macos_arm64_sha}",
-         intel:        "${macos_x86_64_sha}",
-         arm64_linux:  "${linux_arm64_sha}",
-         x86_64_linux: "${linux_x86_64_sha}"
-
-  url "https://github.com/openhundun/ignore-kit/releases/download/latest/${APP_NAME}-#{arch}-#{os}.tar.gz"
-  name "${APP_NAME}"
-  homepage "https://github.com/openhundun/ignore-kit"
-
-  binary "${APP_NAME}"
-end
-EOF
-    echo "wrote ${CASK_FILE}"
-}
-
 function job__release() {
     local package_version="$(version)"
     local tag="latest"
     job__package
-    job__cask
     if gh release view "${tag}" > /dev/null 2>&1; then
-        gh release upload "${tag}" "${DIST}"/*.tar.gz "${CASK_FILE}" --clobber
+        gh release upload "${tag}" "${DIST}"/*.tar.gz --clobber
     else
-        gh release create "${tag}" "${DIST}"/*.tar.gz "${CASK_FILE}" --title "${tag}" --notes "${APP_NAME} ${package_version}"
+        gh release create "${tag}" "${DIST}"/*.tar.gz --title "${tag}" --notes "${APP_NAME} ${package_version}"
     fi
 }
 
@@ -268,7 +229,6 @@ job__check) job__check ;;
 job__contract) job__contract ;;
 job__web) job__web ;;
 job__package) job__package ;;
-job__cask) job__cask ;;
 job__release) job__release ;;
 *) help ;;
 esac

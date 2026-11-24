@@ -34,7 +34,6 @@
 **/build/
 **/cmake-build-*/
 **/components.d.ts
-deploy/ignore-compose-cask/
 **/dist/
 **/go.sum
 **/gradle/

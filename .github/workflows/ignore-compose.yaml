@@ -6,7 +6,8 @@ defaults:
     shell: bash --noprofile --norc -euo pipefail {0}
 jobs:
   build:
-    needs: [check]
+    needs:
+      - check
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
@@ -48,7 +49,8 @@ jobs:
     timeout-minutes: 20
   release:
     if: github.ref == 'refs/heads/main'
-    needs: [build]
+    needs:
+      - build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -60,20 +62,12 @@ jobs:
       - env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: bash script/ignore-compose.sh job__package step__release
-      - name: dispatch homebrew tap
-        env:
-          GH_TOKEN: ${{ secrets.TAP_TOKEN }}
-        run: |
-          gh api repos/openhundun/homebrew-tap/dispatches \
-            --method POST \
-            --input - <<EOF
-          {"event_type":"ignore-kit-release"}
-          EOF
     timeout-minutes: 10
 name: ignore-compose
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 permissions:
   contents: write

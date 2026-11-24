@@ -8,8 +8,8 @@
 | `source/ignore-compose-web/`            | SolidJS + TailwindCSS 编辑器：`src/`（TSX 组件与 wasm 宿主）、Vite 构建配置；依赖安装不生成锁文件                       |
 | `deploy/ignore-compose.schema.json`     | 配置文件 JSON Schema                                                                                                    |
 | `deploy/ignore-compose.d.ts`            | 配置类型 TypeScript 声明                                                                                                |
-| `script/ignore-compose.sh`              | `job__check`、`job__contract`、`job__web`、`job__package`、`job__cask`、`job__release`                                  |
-| `.github/workflows/ignore-compose.yaml` | main push：编译检查 + 四平台构建，覆盖 `latest` release 资产并触发 homebrew-tap；release 仅在 main 运行 |
+| `script/ignore-compose.sh`              | `job__check`、`job__contract`、`job__web`、`job__package`、`job__release`                                              |
+| `.github/workflows/ignore-compose.yaml` | main push：编译检查 + 四平台构建，覆盖 `latest` release 资产；release 仅在 main 运行 |
 
 `deploy/ignore-compose.schema.json` 与 `deploy/ignore-compose.d.ts` 由 `bash script/ignore-compose.sh job__contract` 调用 CLI 的 `schema` / `dts` 生成，不要手改。
 
