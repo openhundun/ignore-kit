@@ -3,10 +3,10 @@ cask "ignore-compose" do
   os macos: "apple-darwin", linux: "unknown-linux-musl"
 
   version "0.0.1"
-  sha256 arm:          "99d50c9fa2a5916c15f4b4a8c66ae776c0bbcfcf3c8b889e3a4bf0492dfdb60c",
-         intel:        "ddaeaf18cb0e78ed0fcbe377cecb771949c95f2b11e69ea5438715fc691ff694",
-         arm64_linux:  "b78ff33d0e6327dc2a9e30e6d100e1b204d8caf9d5a9ddc67c4e94e4cf36038c",
-         x86_64_linux: "b643467f893de75340bacce5cc54071c2dd6715bc8727c97bca6bcc54a4d5f20"
+  sha256 arm:          "68c93f3c885fc6a4120a801180dc8a2d460a622544ceaa33e4aea46180248880",
+         intel:        "c993fcc8d3d2e267c64e7d178ff2890f69a00e797037bd6713312fe2677384b9",
+         arm64_linux:  "2191b9b768f7082e6549d1666fb6e5a2584635563f878b637369e2665c8f55b9",
+         x86_64_linux: "bd75937f3385736845dd98b8c69974b40a25f07bf14a668652acabd1b8683ede"
 
   url "https://github.com/openhundun/ignore-kit/releases/download/latest/ignore-compose-#{arch}-#{os}.tar.gz"
   name "ignore-compose"
