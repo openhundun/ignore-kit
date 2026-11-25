@@ -44,6 +44,11 @@ impl CheckUtil {
     }
 }
 
+pub struct PatternLine {
+    pub text: String,
+    pub global: bool,
+}
+
 pub struct Composer;
 
 impl Composer {
@@ -120,15 +125,19 @@ impl Composer {
         crate::CheckUtil::ensure(name.to_ascii_lowercase().contains("ignore"), || format!("{path}: output file name must contain \"ignore\""))
     }
 
-    fn split_pattern_lines(text: &str) -> Vec<String> {
+    fn split_pattern_lines(text: &str, global: bool) -> Vec<PatternLine> {
         text.lines()
             .map(|line| line.trim_end_matches(['\r', ' ', '\t']))
             .filter(|line| !line.is_empty() && !line.starts_with('#'))
-            .map(str::to_string)
+            .map(|line| PatternLine { text: line.to_string(), global })
             .collect()
     }
 
-    fn apply_overrides(line_list: Vec<String>, override_list: &[crate::OverrideItem], context: &str, strict: bool) -> Result<(Vec<String>, Vec<String>), String> {
+    fn is_global_upstream(key: &str) -> bool {
+        key.split(|character| character == '/' || character == '\\').any(|segment| segment == "Global")
+    }
+
+    fn apply_overrides(line_list: Vec<PatternLine>, override_list: &[crate::OverrideItem], context: &str, strict: bool) -> Result<(Vec<PatternLine>, Vec<String>), String> {
         let mut current = line_list;
         let mut appended = Vec::new();
         override_list.iter().enumerate().try_for_each(|(index, rule)| {
@@ -136,13 +145,13 @@ impl Composer {
             let has_into = !rule.into.is_empty();
             crate::CheckUtil::ensure(has_from || has_into, || format!("{context}: override[{index}] has empty \"from\" and \"into\""))?;
             if has_from {
-                let matched = current.iter().any(|line| line == &rule.from);
+                let matched = current.iter().any(|line| line.text == rule.from);
                 crate::CheckUtil::ensure(matched || !strict, || format!("{context}: override[{index}] \"from\" did not match any upstream line: {:?}", rule.from))?;
                 if matched {
                     if has_into {
-                        current.iter_mut().filter(|line| line.as_str() == rule.from).for_each(|line| *line = rule.into.clone());
+                        current.iter_mut().filter(|line| line.text == rule.from).for_each(|line| line.text = rule.into.clone());
                     } else {
-                        current.retain(|line| line != &rule.from);
+                        current.retain(|line| line.text != rule.from);
                     }
                 }
             } else {
@@ -154,14 +163,14 @@ impl Composer {
     }
 
     fn compose_output(path: &str, entries: &[crate::Entry], sources: &std::collections::BTreeMap<String, String>, strict: bool) -> Result<String, String> {
-        let mut positive_set = std::collections::BTreeSet::new();
-        let mut negative_set = std::collections::BTreeSet::new();
+        let mut positive_map = std::collections::BTreeMap::<String, bool>::new();
+        let mut negative_map = std::collections::BTreeMap::<String, bool>::new();
         let mut custom_list = Vec::new();
         entries.iter().enumerate().try_for_each(|(index, entry)| {
             let mut line_list = Vec::new();
             entry.upstream.iter().try_for_each(|key| match sources.get(key) {
                 Some(text) => {
-                    line_list.extend(Self::split_pattern_lines(text));
+                    line_list.extend(Self::split_pattern_lines(text, Self::is_global_upstream(key)));
                     Ok(())
                 }
                 None => crate::CheckUtil::ensure(!strict, || format!("{path}: upstream not provided: {key}")),
@@ -170,34 +179,44 @@ impl Composer {
             let (line_list, appended_list) = Self::apply_overrides(line_list, &entry.override_list, &context, strict)?;
             custom_list.extend(appended_list);
             line_list.into_iter().for_each(|line| {
-                if line.starts_with('!') {
-                    negative_set.insert(line);
-                } else {
-                    positive_set.insert(line);
-                }
+                let target = if line.text.starts_with('!') { &mut negative_map } else { &mut positive_map };
+                target.entry(line.text).and_modify(|global| *global |= line.global).or_insert(line.global);
             });
             Ok::<(), String>(())
         })?;
         let mut seen_set = std::collections::BTreeSet::new();
         custom_list.retain(|line| seen_set.insert(line.clone()));
-        crate::CheckUtil::ensure(!strict || !(positive_set.is_empty() && negative_set.is_empty() && custom_list.is_empty()), || {
+        crate::CheckUtil::ensure(!strict || !(positive_map.is_empty() && negative_map.is_empty() && custom_list.is_empty()), || {
             format!("{path}: output has no patterns")
         })?;
-        let mut content = String::new();
-        positive_set.iter().chain(negative_set.iter()).for_each(|line| {
-            content.push_str(line);
-            content.push('\n');
+        let mut global_positive = Vec::new();
+        let mut local_positive = Vec::new();
+        positive_map.into_iter().for_each(|(line, global)| {
+            if global {
+                global_positive.push(line);
+            } else {
+                local_positive.push(line);
+            }
         });
-        if !custom_list.is_empty() {
+        let negative_list = negative_map.into_keys().collect::<Vec<_>>();
+        let mut content = String::new();
+        Self::append_block(&mut content, &global_positive);
+        Self::append_block(&mut content, &local_positive);
+        Self::append_block(&mut content, &negative_list);
+        Self::append_block(&mut content, &custom_list);
+        Ok(content)
+    }
+
+    fn append_block(content: &mut String, line_list: &[String]) {
+        if !line_list.is_empty() {
             if !content.is_empty() {
                 content.push('\n');
             }
-            custom_list.iter().for_each(|line| {
+            line_list.iter().for_each(|line| {
                 content.push_str(line);
                 content.push('\n');
             });
         }
-        Ok(content)
     }
 }
 
