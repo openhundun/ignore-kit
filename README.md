@@ -28,7 +28,7 @@ ignore-compose dts                                 # d.ts 输出到 stdout
 - `gen` 默认只输出到 stdout；`-w` / `--write` 才落文件，`--check` 只比较，二者互斥。
 - `gen` 只有一个输出时直接打印内容；多个输出时每个文件前打印 `==> <path>`。
 - `-f` / `--config` 不传时从当前目录向上找最近的 `ignore-compose.json`；输出路径相对配置文件目录。
-- 规则输出顺序：`Global/` upstream 的规则单独排序并置顶；其余 upstream 规则、否定规则、custom 规则依次跟随，组间空行。
+- 规则输出顺序：`Global/` upstream 的规则单独排序并置顶；其余 upstream 规则、否定规则连续输出；只有 custom 追加规则前加空行。
 - `-w` 与 `--check` 会先跑 `.gitignore` guard；`gen` 纯输出不跑 guard。
 - `schema` / `dts` 不接受参数，只写 stdout；CI 的 `job__contract` 负责重定向到 `deploy/`。
 

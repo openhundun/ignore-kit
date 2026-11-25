@@ -200,23 +200,23 @@ impl Composer {
         });
         let negative_list = negative_map.into_keys().collect::<Vec<_>>();
         let mut content = String::new();
-        Self::append_block(&mut content, &global_positive);
-        Self::append_block(&mut content, &local_positive);
-        Self::append_block(&mut content, &negative_list);
-        Self::append_block(&mut content, &custom_list);
-        Ok(content)
-    }
-
-    fn append_block(content: &mut String, line_list: &[String]) {
-        if !line_list.is_empty() {
+        Self::append_lines(&mut content, &global_positive);
+        Self::append_lines(&mut content, &local_positive);
+        Self::append_lines(&mut content, &negative_list);
+        if !custom_list.is_empty() {
             if !content.is_empty() {
                 content.push('\n');
             }
-            line_list.iter().for_each(|line| {
-                content.push_str(line);
-                content.push('\n');
-            });
+            Self::append_lines(&mut content, &custom_list);
         }
+        Ok(content)
+    }
+
+    fn append_lines(content: &mut String, line_list: &[String]) {
+        line_list.iter().for_each(|line| {
+            content.push_str(line);
+            content.push('\n');
+        });
     }
 }
 
