@@ -5,6 +5,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
+        "predev": "bash ../../script/ignore-compose.sh job__web step__vendor",
         "build": "vite build",
         "check": "biome check . && tsc --noEmit"
     },

@@ -51,4 +51,6 @@
 **/venv/
 **/yarn-*.log
 
+/source/ignore-compose-web/public/vendor/
+
 /.agents/__data__/

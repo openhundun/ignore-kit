@@ -1,0 +1,30 @@
+concurrency:
+  cancel-in-progress: false
+  group: vendor
+defaults:
+  run:
+    shell: bash --noprofile --norc -euo pipefail {0}
+jobs:
+  update:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: bash script/ignore-compose.sh job__vendor step__sync
+      - run: bash script/ignore-compose.sh job__vendor step__verify
+      - run: |
+          git add -A vendor
+          if git diff --cached --quiet; then
+            echo "vendor is current"
+            exit 0
+          fi
+          git config user.name openhundun-admin
+          git config user.email openhundun-admin@outlook.com
+          git commit -m "1"
+          git push
+    timeout-minutes: 10
+name: vendor
+on:
+  workflow_dispatch:
+permissions:
+  contents: write

@@ -9,7 +9,7 @@ readonly APP_NAME="ignore-compose"
 readonly DIST="${GIT_REPOSITORY_DIR}/source/${APP_NAME}-cli/dist"
 
 function help() {
-    echo "USAGE: ${0} <job__check|job__contract|job__web|job__package|job__release> [step__xxx] [target]"
+    echo "USAGE: ${0} <job__check|job__contract|job__vendor|job__web|job__package|job__release> [step__xxx] [target]"
 }
 
 function version() {
@@ -85,7 +85,15 @@ function job__web() {
         cp "target/wasm32-unknown-unknown/release/ignore_compose_lib.wasm" "source/${APP_NAME}-web/public/ignore_compose.wasm"
     }
 
+    function step__vendor() {
+        local target="${GIT_REPOSITORY_DIR}/source/${APP_NAME}-web/public/vendor"
+        rm -rf "${target}"
+        mkdir -p "${target}"
+        cp -R "${GIT_REPOSITORY_DIR}/vendor/raw.githubusercontent.com" "${target}/"
+    }
+
     function step__dist() {
+        step__vendor
         cd "${GIT_REPOSITORY_DIR}/source/${APP_NAME}-web"
         bun install --no-save
         bun run build
@@ -111,6 +119,7 @@ function job__web() {
 
     case "${ARG_STEP}" in
     step__wasm) step__wasm ;;
+    step__vendor) step__vendor ;;
     step__dist) step__dist ;;
     *) all ;;
     esac
@@ -213,6 +222,86 @@ function job__package() {
     esac
 }
 
+function job__vendor() {
+    local vendor_source="github/gitignore"
+    local vendor_ref="main"
+    local vendor_dir="${GIT_REPOSITORY_DIR}/vendor"
+    local vendor_templates="${vendor_dir}/raw.githubusercontent.com/${vendor_source}/${vendor_ref}"
+    local vendor_metadata="${vendor_dir}/github-gitignore.json"
+
+    function step__sync() {
+        local commit="${GITIGNORE_COMMIT:-$(git ls-remote "https://github.com/${vendor_source}.git" "refs/heads/${vendor_ref}" | awk 'NR == 1 { print $1 }')}"
+        [[ "${commit}" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "error: cannot resolve ${vendor_source}@${vendor_ref}" >&2
+            return 1
+        }
+        local temp_dir
+        temp_dir="$(mktemp -d)"
+        trap 'rm -rf "${temp_dir}"' EXIT
+        curl --fail --silent --show-error --location \
+            "https://codeload.github.com/${vendor_source}/tar.gz/${commit}" \
+            --output "${temp_dir}/source.tar.gz"
+        tar -xzf "${temp_dir}/source.tar.gz" -C "${temp_dir}"
+        local source_dir
+        source_dir="$(find "${temp_dir}" -mindepth 1 -maxdepth 1 -type d -print -quit)"
+        [[ -n "${source_dir}" ]] || {
+            echo "error: empty ${vendor_source} archive" >&2
+            return 1
+        }
+        local staging="${temp_dir}/templates"
+        mkdir -p "${staging}"
+        local count=0
+        while IFS= read -r -d '' file; do
+            local relative="${file#"${source_dir}"/}"
+            mkdir -p "$(dirname "${staging}/${relative}")"
+            cp "${file}" "${staging}/${relative}"
+            count=$((count + 1))
+        done < <(find "${source_dir}" \( -type f -o -type l \) -name '*.gitignore' -print0)
+        rm -rf "${vendor_templates}"
+        mkdir -p "$(dirname "${vendor_templates}")"
+        mv "${staging}" "${vendor_templates}"
+        cp "${source_dir}/LICENSE" "${vendor_dir}/github-gitignore.LICENSE"
+        jq -n \
+            --arg commit "${commit}" \
+            --arg ref "${vendor_ref}" \
+            --arg repository "https://github.com/${vendor_source}" \
+            --argjson templates "${count}" \
+            '{commit: $commit, ref: $ref, repository: $repository, templates: $templates}' > "${vendor_metadata}"
+        echo "vendor updated: ${vendor_source}@${commit} (${count} templates)"
+    }
+
+    function step__verify() {
+        [[ -f "${vendor_metadata}" ]] || {
+            echo "error: missing ${vendor_metadata}" >&2
+            return 1
+        }
+        local commit
+        commit="$(jq -r '.commit' "${vendor_metadata}")"
+        [[ "${commit}" =~ ^[0-9a-f]{40}$ ]] || {
+            echo "error: invalid commit in ${vendor_metadata}" >&2
+            return 1
+        }
+        local expected
+        expected="$(jq -r '.templates' "${vendor_metadata}")"
+        local actual
+        actual="$(find "${vendor_templates}" -type f -name '*.gitignore' | wc -l | tr -d ' ')"
+        [[ "${expected}" == "${actual}" ]] || {
+            echo "error: vendor template count ${actual}, expected ${expected}" >&2
+            return 1
+        }
+        echo "vendor ok: ${vendor_source}@${commit} (${actual} templates)"
+    }
+
+    case "${ARG_STEP}" in
+    step__sync) step__sync ;;
+    step__verify) step__verify ;;
+    *)
+        echo "USAGE: ${0} job__vendor <step__sync|step__verify>" >&2
+        return 1
+        ;;
+    esac
+}
+
 function job__release() {
     local package_version="$(version)"
     local tag="latest"
@@ -227,6 +316,7 @@ function job__release() {
 case "${ARG_JOB}" in
 job__check) job__check ;;
 job__contract) job__contract ;;
+job__vendor) job__vendor ;;
 job__web) job__web ;;
 job__package) job__package ;;
 job__release) job__release ;;

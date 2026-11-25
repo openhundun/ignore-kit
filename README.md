@@ -8,7 +8,8 @@
 | `source/ignore-compose-web/`            | SolidJS + TailwindCSS 编辑器：`src/`（TSX 组件与 wasm 宿主）、Vite 构建配置；依赖安装不生成锁文件                       |
 | `deploy/ignore-compose.schema.json`     | 配置文件 JSON Schema                                                                                                    |
 | `deploy/ignore-compose.d.ts`            | 配置类型 TypeScript 声明                                                                                                |
-| `script/ignore-compose.sh`              | `job__check`、`job__contract`、`job__web`、`job__package`、`job__release`                                              |
+| `vendor/`                               | `github/gitignore` 全量快照（316 个模板，含 Global / community）；web 构建时复制到 `public/vendor/`                     |
+| `script/ignore-compose.sh`              | `job__check`、`job__contract`、`job__vendor`、`job__web`、`job__package`、`job__release`                                |
 | `.github/workflows/ignore-compose.yaml` | main push：编译检查 + 四平台构建，覆盖 `latest` release 资产；release 仅在 main 运行 |
 
 `deploy/ignore-compose.schema.json` 与 `deploy/ignore-compose.d.ts` 由 `bash script/ignore-compose.sh job__contract` 调用 CLI 的 `schema` / `dts` 生成，不要手改。
@@ -38,7 +39,7 @@ ignore-compose dts                                 # d.ts 输出到 stdout
 - **右侧**：`Config`（`ignore-compose.json` 原文编辑器，随左侧 Form 变化同步）｜ `Preview`（只读 `.gitignore` 编辑器，3 位行号 + 1 位图标；已加载的 source 先渲染，缺失的跳过，标题右侧显示加载进度与失败红点）。
 - **source**：upstream 列表，拉取时优先读 vendor；导入配置后自动预取全部 upstream（去重、已加载跳过、单个 20s 超时，vendor 优先、网络兜底）。
 - **transform**：from → into；**sink**：输出路径。
-- **vendor**：`public/vendor/<host>/<path>` 存放上游模板的离线副本（当前是 Node / macOS 两份 gitignore）；拉取时先查 vendor（支持 `refs/heads/` 与 `%xx` 归一化），未命中再走网络。
+- **vendor**：`vendor/raw.githubusercontent.com/github/gitignore/main/` 是上游全量快照（316 个 `.gitignore`，含 `Global/` 与 `community/`）；`job__web` 在构建前把它复制到 `public/vendor/`，拉取时先查 vendor（支持 `refs/heads/` 与 `%xx` 归一化），未命中再走网络。
 
 构建并通过 HTTP 打开（页面会从站点根目录加载 `ignore_compose.wasm`，不要用 `file://`）：
 
@@ -53,3 +54,16 @@ python3 -m http.server 8000 --directory source/ignore-compose-web/dist
 cd source/ignore-compose-web
 bun run dev
 ```
+
+## Vendor
+
+`vendor/` 是 `github/gitignore` 的只读快照，目录结构按 raw URL 镜像；`github-gitignore.json` 记录 commit、ref 与模板数，`github-gitignore.LICENSE` 是上游 CC0-1.0 许可。
+
+```sh
+bash script/ignore-compose.sh job__vendor step__sync    # 拉取上游 main 并同步 vendor/
+bash script/ignore-compose.sh job__vendor step__verify  # 校验元数据与模板数
+```
+
+CI 在 `.github/workflows/vendor.yaml` 中提供手动 `workflow_dispatch`：同步、校验，有变化时以 `1` 提交并推送；没有变化则不产生提交。
+
+顶层与 `Global/` 的 `.gitignore` 文件名没有冲突，但 `community/Racket.gitignore` 与顶层 `Racket.gitignore` 重名，`community/BoxLang/ColdBox.gitignore` 与 `community/CFML/ColdBox.gitignore` 也重名，因此 vendor 保留上游目录结构，不按 basename 全量平铺。
